@@ -51,6 +51,28 @@ except:
 
 st.title("🛠️ Real-Time Shaker Monitoring Dashboard")
 
+with st.expander("📌 Summary: Drilling & Shaker Overview", expanded=True):
+    try:
+        depth_col = 'Bit Depth (feet)' if 'Bit Depth (feet)' in df.columns else 'Hole Depth (feet)'
+        total_depth = df[depth_col].max()
+
+        shaker_col = 'SHAKER #3 (PERCENT)'
+        shaker_avg = df[shaker_col].mean()
+        shaker_min = df[shaker_col].min()
+        shaker_max = df[shaker_col].max()
+
+        screen_col = 'Screen Utilization (%)'
+        screen_avg = df[screen_col].mean() if screen_col in df.columns else 0
+        screen_min = df[screen_col].min() if screen_col in df.columns else 0
+        screen_max = df[screen_col].max() if screen_col in df.columns else 0
+
+        colA, colB, colC = st.columns(3)
+        colA.metric("🛢️ Depth Drilled (ft)", f"{total_depth:,.0f}")
+        colB.metric("🔄 Shaker Load", f"{shaker_avg:.1f}% (avg)", f"{shaker_min:.1f}–{shaker_max:.1f}%")
+        colC.metric("📉 Screen Utilization", f"{screen_avg:.1f}% (avg)", f"{screen_min:.1f}–{screen_max:.1f}%")
+    except Exception as e:
+        st.warning(f"Summary stats unavailable: {e}")
+
 # Inputs
 SCREEN_MESH_CAPACITY = {"API 100": 250, "API 140": 200, "API 170": 160, "API 200": 120}
 df_mesh_type = st.sidebar.selectbox("Select Screen Mesh Type", list(SCREEN_MESH_CAPACITY.keys()))
@@ -115,6 +137,29 @@ else:
 # Footer
 st.markdown("""
     <div style='text-align: center; padding: 20px; font-size: 13px; color: #888'>
+
+# AI-based Screen Advisory
+st.subheader("🤖 AI Screen Performance Insights")
+try:
+    alerts = []
+    if screen_avg > 85:
+        alerts.append("🔄 **Screen Change Recommended** — sustained utilization above 85%.")
+    if shaker_max > 95 and screen_avg > 80:
+        alerts.append("⚠️ **Attention Needed** — high shaker output may indicate blinding or overload.")
+    if screen_avg < 75 and shaker_avg < 70:
+        alerts.append("✅ **System Healthy** — screen and shaker performance appear optimal.")
+
+    if len(alerts) > 0:
+        for a in alerts:
+            st.info(a)
+    else:
+        st.success("All screening parameters are within efficient operating range.")
+
+    # Estimated savings
+    estimated_savings = (screen_avg / 100) * 120  # example $/day logic
+    st.caption(f"💰 Estimated Mud Savings Impact: ~${estimated_savings:,.0f} per day from optimal screening.")
+except Exception as e:
+    st.warning(f"AI Advisor unavailable: {e}")
         © 2024 Prodigy IQ • Clean UI Inspired by Google
     </div>
 """, unsafe_allow_html=True)

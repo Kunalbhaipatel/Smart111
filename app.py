@@ -159,6 +159,50 @@ try:
     estimated_savings = (screen_avg / 100) * 120  # example $/day logic
     st.caption(f"💰 Estimated Mud Savings Impact: ~${estimated_savings:,.0f} per day from optimal screening.")
 except Exception as e:
+
+    # 🔄 Real-Time Shaker Performance
+    st.subheader("📊 Real-Time Shaker Load Chart")
+    try:
+        plot_df = df.sort_values('Timestamp').tail(1000)
+        fig_realtime = go.Figure()
+        fig_realtime.add_trace(go.Scatter(x=plot_df['Timestamp'], y=plot_df['SHAKER #3 (PERCENT)'],
+                                          mode='lines+markers', name='SHAKER #3'))
+        fig_realtime.update_layout(title='SHAKER #3 - Last 1000 Points',
+                                   xaxis_title='Time', yaxis_title='Load (%)',
+                                   transition=dict(duration=500))
+        st.plotly_chart(fig_realtime, use_container_width=True)
+    except Exception as e:
+        st.warning(f"Real-time shaker chart failed: {e}")
+
+    # 🧪 Screen Load vs. Mechanical Inputs
+    st.subheader("🔧 Screen Utilization vs Mechanical Pressure")
+    try:
+        if 'Screen Utilization (%)' in df.columns:
+            fig_solid = px.scatter(df, x='Weight on Bit (klbs)', y='Screen Utilization (%)',
+                                   size='Hook Load (klbs)', color='MA_Flow_Rate (gal/min)',
+                                   labels={'Weight on Bit (klbs)': 'WOB', 'Screen Utilization (%)': 'Screen Load'},
+                                   title='Screen Load Impacted by Solids & Pressure')
+            st.plotly_chart(fig_solid, use_container_width=True)
+    except Exception as e:
+        st.warning(f"Screen utilization impact chart failed: {e}")
+
+    # 🚩 Detection Flags
+    st.subheader("🚩 System Health Flags")
+    try:
+        flags = []
+        if 'Screen Utilization (%)' in df.columns and df['Screen Utilization (%)'].mean() > 90:
+            flags.append("🔴 High sustained screen load (>90%). Screen change strongly recommended.")
+        if 'SHAKER #3 (PERCENT)' in df.columns and df['SHAKER #3 (PERCENT)'].max() > 98:
+            flags.append("🔴 Peak shaker output above safe threshold (>98%). Inspect for mechanical stress.")
+        if 'Hook Load (klbs)' in df.columns and df['Hook Load (klbs)'].std() > 20:
+            flags.append("🟠 Mechanical load fluctuation detected. Monitor for vibration or instability.")
+        if not flags:
+            flags.append("🟢 All indicators are within safe operational bounds.")
+
+        for f in flags:
+            st.info(f)
+    except Exception as e:
+        st.warning(f"Alert flag evaluation failed: {e}")
     st.warning(f"AI Advisor unavailable: {e}")
         © 2024 Prodigy IQ • Clean UI Inspired by Google
     </div>
